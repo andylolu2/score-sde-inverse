@@ -1,0 +1,9 @@
+gdown
+ipykernel
+jupyter
+ml-collections
+nbconvert
+numpy
+Pillow
+scipy
+torch
