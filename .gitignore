@@ -36,3 +36,6 @@ checkpoints/*
 
 # Built Visual Studio Code Extensions
 *.vsix
+
+# Ignore all notebooks, git add explicitly if want to track them
+*.ipynb
