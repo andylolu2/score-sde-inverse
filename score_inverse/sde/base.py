@@ -1,6 +1,6 @@
 import abc
+from typing import Any
 
-import numpy as np
 import torch
 
 
@@ -18,26 +18,26 @@ class SDE(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def T(self):
+    def T(self) -> float:
         """End time of the SDE."""
         pass
 
     @abc.abstractmethod
-    def sde(self, x, t):
+    def sde(self, x, t) -> Any:
         pass
 
     @abc.abstractmethod
-    def marginal_prob(self, x, t):
+    def marginal_prob(self, x, t) -> Any:
         """Parameters to determine the marginal distribution of the SDE, $p_t(x)$."""
         pass
 
     @abc.abstractmethod
-    def prior_sampling(self, shape):
+    def prior_sampling(self, shape) -> Any:
         """Generate one sample from the prior distribution, $p_T(x)$."""
         pass
 
     @abc.abstractmethod
-    def prior_logp(self, z):
+    def prior_logp(self, z) -> Any:
         """Compute log-density of the prior distribution.
 
         Useful for computing the log-likelihood via probability flow ODE.

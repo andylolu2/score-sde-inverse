@@ -4,9 +4,19 @@ import torch
 from scipy import integrate
 
 from score_inverse.models import utils as mutils
-from score_inverse.models.utils import from_flattened_numpy,get_score_fn, to_flattened_numpy
-from .correctors import AnnealedLangevinDynamics, LangevinCorrector, NoneCorrector
+from score_inverse.models.utils import (
+    from_flattened_numpy,
+    get_score_fn,
+    to_flattened_numpy,
+)
+from .correctors import (
+    Corrector,
+    AnnealedLangevinDynamics,
+    LangevinCorrector,
+    NoneCorrector,
+)
 from .predictors import (
+    Predictor,
     AncestralSamplingPredictor,
     EulerMaruyamaPredictor,
     NonePredictor,
@@ -176,7 +186,7 @@ def get_pc_sampler(
                 x, x_mean = corrector_update_fn(x, vec_t, model=model)
                 x, x_mean = predictor_update_fn(x, vec_t, model=model)
 
-            return inverse_scaler(x_mean if denoise else x), sde.N * (n_steps + 1)
+            return inverse_scaler(x_mean if denoise else x), sde.N * (n_steps + 1)  # type: ignore
 
     return pc_sampler
 
