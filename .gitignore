@@ -36,3 +36,5 @@ checkpoints/*
 
 # Built Visual Studio Code Extensions
 *.vsix
+
+CIFAR10/
