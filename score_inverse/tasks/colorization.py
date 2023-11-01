@@ -1,6 +1,7 @@
 import torch
-from torch.types import _size
 import torch.nn.functional as F
+import torch.distributions as D
+from torch.types import _size
 
 from score_inverse.tasks.task import InverseTask
 
@@ -26,6 +27,9 @@ class ColorizationTask(InverseTask):
         self.kernel = torch.stack([v_gray, v_1, v_2])
         self.kernel_inv = torch.inverse(self.kernel)
 
+    def noise(self, n: int) -> torch.Tensor:
+        return torch.tensor(0)
+
     def transform(self, x: torch.Tensor) -> torch.Tensor:
         kernel = self.kernel.view((3, 3, 1, 1))  # (out in kernel_h kernel_w)
         return F.conv2d(x, kernel.to(x.device))
@@ -40,7 +44,6 @@ class ColorizationTask(InverseTask):
         return x
 
     def mask_inv(self, x: torch.Tensor) -> torch.Tensor:
-        """Implements `(I - Λ) @ x` from the paper."""
         x = x.clone()
         x[:, :1, :, :] = 0
         return x

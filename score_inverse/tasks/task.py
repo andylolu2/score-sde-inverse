@@ -4,6 +4,20 @@ import torch
 
 
 class InverseTask(abc.ABC):
+    def A(self, x: torch.Tensor) -> torch.Tensor:
+        """Implements `A @ x = P(Λ) @ T @ x` from the paper."""
+        y = self.drop(self.transform(x))
+        return y
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Implements `A @ x + ϵ` from the paper."""
+        return self.A(x) + self.noise(len(x))
+
+    @abc.abstractmethod
+    def noise(self, n: int) -> torch.Tensor:
+        """Implements `ϵ` from the paper."""
+        ...
+
     @abc.abstractmethod
     def transform(self, x: torch.Tensor) -> torch.Tensor:
         """Implements `T @ x` from the paper."""
@@ -36,8 +50,3 @@ class InverseTask(abc.ABC):
     def drop_inv(self, y: torch.Tensor) -> torch.Tensor:
         """Implements `P^{-1}(Λ) @ y` from the paper."""
         ...
-
-    def A(self, x: torch.Tensor) -> torch.Tensor:
-        """Implements `A @ x = P(Λ) @ T @ x` from the paper."""
-        y = self.drop(self.transform(x))
-        return y
