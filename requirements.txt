@@ -8,3 +8,5 @@ Pillow
 scipy
 torch
 torchvision
+matplotlib
+scikit-image

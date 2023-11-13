@@ -13,6 +13,7 @@ class DenoiseTask(InverseTask):
         self.noise_std = noise_std
 
     def noise(self, n: int) -> torch.Tensor:
+        # TODO: Add option to add different kind of noise (e.g. shot noise)
         return self.noise_std * torch.randn((n, self.c, self.h, self.w))
 
     def transform(self, x: torch.Tensor) -> torch.Tensor:
