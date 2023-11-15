@@ -29,10 +29,10 @@ The original paper suggests decomposing $A$ into $A = \mathcal{P}(\Lambda) T$ wh
 The core update to apply (before applying the standard diffusion update) is:
 
 $$
-\hat{x}'_{t_i} = T^{-1}[
-    \lambda \Lambda \mathcal{P}^{-1}(\Lambda) \hat{y}_{t_i}
-    + (1-\lambda) \Lambda T \hat{x}_{t_i}
-    + (I-\Lambda) T \hat{x}_{t_i}
+\hat{x}'\_{t_i} = T^{-1}[
+    \lambda \Lambda \mathcal{P}^{-1}(\Lambda) \hat{y}\_{t_i}
+    + (1-\lambda) \Lambda T \hat{x}\_{t_i}
+    + (I-\Lambda) T \hat{x}\_{t_i}
 ]
 $$
 
@@ -52,10 +52,10 @@ We then use $T = V^T$ and $\mathcal{P}(\Lambda) = U \Sigma$. Note this breaks th
 The update equation now becomes:
 
 $$
-\hat{x}'_{t_i} = V[
-    \lambda \Lambda \Sigma^{-1} U^T \hat{y}_{t_i}
-    + (1-\lambda) \Lambda V^T \hat{x}_{t_i}
-    + (I-\Lambda) V^T \hat{x}_{t_i}
+\hat{x}'\_{t_i} = V [
+    \lambda \Lambda \Sigma^{-1} U^T \hat{y}\_{t_i} 
+    + (1-\lambda) \Lambda V^T \hat{x}\_{t_i} 
+    + (I-\Lambda) V^T \hat{x}\_{t_i}
 ]
 $$
 
@@ -65,13 +65,13 @@ We can simplify the above equation to:
 
 $$
 \begin{align}
-\hat{x}'_{t_i}
+\hat{x}'\_{t_i}
     &= V[
-        \lambda \Lambda (\Sigma^{-1} U^T \hat{y}_{t_i}- V^T \hat{x}_{t_i})
+        \lambda \Lambda (\Sigma^{-1} U^T \hat{y}\_{t_i}- V^T \hat{x}\_{t_i})
         + V^T \hat{x}_{t_i}
     ] \\
-    &= \lambda V \Lambda (\Sigma^{-1} U^T \hat{y}_{t_i}- V^T \hat{x}_{t_i})
-        + \hat{x}_{t_i}
+    &= \lambda V \Lambda (\Sigma^{-1} U^T \hat{y}\_{t_i}- V^T \hat{x}\_{t_i})
+        + \hat{x}\_{t_i}
 \end{align}
 $$
 
