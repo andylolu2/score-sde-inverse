@@ -15,6 +15,7 @@ flags.mark_flag_as_required("checkpoint")
 ALL_CHECKPOINTS = {
     "ve/cifar10_ncsnpp_deep_continuous": "https://drive.google.com/file/d/1yS8QZb_6tCeZkY7DK4_RI-Crc6LQLILN/view?usp=sharing",
     "subvp/cifar10_ddpmpp_deep_continuous": "https://drive.google.com/file/d/1bXoPbY28nReVIaNGutZfLzgS2uDK4k0I/view?usp=sharing",
+    "ve/celebahq_256_ncsnpp_continuous": "https://drive.google.com/file/d/1ocvHVzAeYtwIRFPgqG1CPPHdXUzY85UG/view?usp=sharing",
 }
 
 
