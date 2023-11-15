@@ -186,9 +186,7 @@ def get_pc_sampler(
                 x, x_mean = corrector_update_fn(x, vec_t, model=model)
                 x, x_mean = predictor_update_fn(x, vec_t, model=model)
 
-                yield inverse_scaler(x_mean if denoise else x), i + 1
-
-            # return inverse_scaler(x_mean if denoise else x), sde.N * (n_steps + 1)  # type: ignore
+            return inverse_scaler(x_mean if denoise else x), sde.N * (n_steps + 1)  # type: ignore
 
     return pc_sampler
 
