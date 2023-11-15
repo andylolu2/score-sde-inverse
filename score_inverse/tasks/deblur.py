@@ -35,7 +35,7 @@ class DeblurTask(DecomposeddSVDInverseTask):
         A = torch.zeros(input_size - 2 * (kernel.shape[0] // 2), input_size)
         for i in range(A.shape[0]):
             for j in range(kernel.shape[0]):
-                j_pos = i - kernel.shape[0] // 2 + j
+                j_pos = i + j
                 if 0 <= j_pos < A.shape[1]:
                     A[i, j_pos] = kernel[j]
         return A
