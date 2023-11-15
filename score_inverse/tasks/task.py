@@ -11,10 +11,10 @@ class InverseTask(abc.ABC):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Implements `A @ x + ϵ` from the paper."""
-        return self.A(x) + self.noise(len(x))
+        return self.A(x) + self.noise(x)
 
     @abc.abstractmethod
-    def noise(self, n: int) -> torch.Tensor:
+    def noise(self, x: torch.tensor) -> torch.Tensor:
         """Implements `ϵ` from the paper."""
         ...
 

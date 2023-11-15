@@ -27,7 +27,7 @@ class ColorizationTask(InverseTask):
         self.kernel = torch.stack([v_gray, v_1, v_2])
         self.kernel_inv = torch.inverse(self.kernel)
 
-    def noise(self, n: int) -> torch.Tensor:
+    def noise(self, _: torch.Tensor) -> torch.Tensor:
         return torch.tensor(0)
 
     def transform(self, x: torch.Tensor) -> torch.Tensor:
