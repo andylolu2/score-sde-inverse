@@ -35,7 +35,7 @@ def main(_):
     elif FLAGS.dataset == "celeba":
         config = get_celeba_config()
         ckpt_path = "checkpoints/ve/celebahq_256_ncsnpp_continuous/checkpoint_48.pth"
-        dataset = CelebA(img_size=config.data.img_size)
+        dataset = CelebA(img_size=config.data.image_size)
     else:
         raise ValueError(f"Unknown dataset {FLAGS.dataset}")
 

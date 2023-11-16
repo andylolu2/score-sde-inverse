@@ -1,25 +1,23 @@
 from pathlib import Path
-from statistics import NormalDist
 
-import torch
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from torchmetrics.image import StructuralSimilarityIndexMeasure, PeakSignalNoiseRatio
-from torchvision.transforms.functional import to_tensor
-from PIL import Image
+import numpy as np
 from absl import app, flags
+from PIL import Image
+from torchmetrics.image import PeakSignalNoiseRatio, StructuralSimilarityIndexMeasure
+from torchvision.transforms.functional import to_tensor
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string("samples_dir", "./logs/samples", "Directory to save samples")
-flags.DEFINE_string("save_dir", "./logs/metrics", "Directory to save metrics")
 
 
 def main(_):
     samples_dir = Path(FLAGS.samples_dir)
 
-    targets = []
-    reconstructs = []
+    metrics = {
+        "ssim": StructuralSimilarityIndexMeasure(data_range=(0, 1)),
+        "psnr": PeakSignalNoiseRatio(data_range=(0, 1)),
+    }
+    values = {name: [] for name in metrics.keys()}
 
     for dataset_item_dir in samples_dir.iterdir():
         if not dataset_item_dir.is_dir():
@@ -31,32 +29,31 @@ def main(_):
 
             target = Image.open(sample_dir / "target.png")
             reconstructed = Image.open(sample_dir / "reconstructed.png")
+            target = to_tensor(target).unsqueeze(0)
+            reconstructed = to_tensor(reconstructed).unsqueeze(0)
 
-            targets.append(to_tensor(target))
-            reconstructs.append(to_tensor(reconstructed))
+            for name, metric in metrics.items():
+                value = metric(reconstructed, target)
+                values[name].append(value.cpu().numpy())
 
-    targets = torch.stack(targets)
-    reconstructs = torch.stack(reconstructs)
+    for name, value in values.items():
+        mean = np.mean(value)
+        low, median, high = bootstrap(value)
 
-    metrics = {
-        "ssim": StructuralSimilarityIndexMeasure(reduction="none", data_range=(0, 1)),
-        "psnr": PeakSignalNoiseRatio(
-            reduction="none", data_range=(0, 1), dim=(1, 2, 3)
-        ),
-    }
-
-    for name, metric in metrics.items():
-        value = metric(reconstructs, targets).cpu().numpy()
-        mean, lower, upper = confidence_interval(value)
-
-        print(f"{name}: {mean:.4f} ({lower:.4f} - {upper:.4f})")
+        print(f"{name}: {mean:.4f} ({low:.4f}, {median:.4f}, {high:.4f})")
 
 
-def confidence_interval(data, confidence=0.95):
-    dist = NormalDist.from_samples(data)
-    z = NormalDist().inv_cdf((1 + confidence) / 2.0)
-    h = dist.stdev * z / ((len(data) - 1) ** 0.5)
-    return dist.mean, dist.mean - h, dist.mean + h
+def bootstrap(data, n=10000, func=np.mean):
+    """Bootstrap estimate of CI for statistic.
+
+    Returns the 5%, 50%, 95% percentiles of the bootstrap distribution.
+    """
+    data = np.array(data)
+
+    samples = np.random.choice(data, size=(n, len(data)))
+    stats = [func(s) for s in samples]
+
+    return np.percentile(stats, [5, 50, 95])
 
 
 if __name__ == "__main__":
