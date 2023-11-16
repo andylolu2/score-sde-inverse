@@ -1,30 +1,31 @@
 from pathlib import Path
 
-import torch
 import numpy as np
-from PIL import Image
+import torch
 from absl import app, flags, logging
+from PIL import Image
 
-from configs.ve.cifar10_ncsnpp_deep_continuous import get_config as get_cifar10_config
 from configs.ve.celebahq_256_ncsnpp_continuous import get_config as get_celeba_config
-from score_inverse.models.utils import create_model
+from configs.ve.cifar10_ncsnpp_deep_continuous import get_config as get_cifar10_config
+from score_inverse.datasets import CIFAR10, CelebA
+from score_inverse.datasets.scalers import get_data_inverse_scaler
 from score_inverse.models.ema import ExponentialMovingAverage
-from score_inverse.tasks.deblur import DeblurTask
-from score_inverse.datasets import CelebA, CIFAR10
-from score_inverse.sde import get_sde
-from score_inverse.datasets.scalers import get_data_inverse_scaler, get_data_scaler
+from score_inverse.models.utils import create_model
 from score_inverse.sampling import get_corrector, get_predictor
 from score_inverse.sampling.inverse import get_pc_inverse_solver
+from score_inverse.sde import get_sde
+from score_inverse.tasks.deblur import DeblurTask
 
 FLAGS = flags.FLAGS
 flags.DEFINE_enum("dataset", "cifar10", ["cifar10", "celeba"], "Dataset to use.")
-flags.DEFINE_integer("num_scales", 100, "Number of discretisation steps")
+flags.DEFINE_integer("num_scales", 50, "Number of discretisation steps")
 flags.DEFINE_integer("batch_size", 1, "Batch size")
 flags.DEFINE_integer("num_batches", 1, "Number of samples to generate")
 flags.DEFINE_integer("samples_per_image", 1, "No. of reconstructed samples per image")
 flags.DEFINE_string("save_dir", "./logs/samples", "Directory to save samples")
 flags.DEFINE_float("lambda_", 0.1, "Lambda parameter for inverse task")
 flags.DEFINE_enum("task", "deblur_gaussian", ["deblur_gaussian"], "Inverse task to use")
+flags.DEFINE_enum("sampling_method", "ode", ["pc", "ode"], "Sampling method to use")
 
 
 def main(_):
@@ -39,6 +40,7 @@ def main(_):
     else:
         raise ValueError(f"Unknown dataset {FLAGS.dataset}")
 
+    config.sampling.method = FLAGS.sampling_method
     config.model.num_scales = FLAGS.num_scales
     config.eval.batch_size = FLAGS.batch_size
 
