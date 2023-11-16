@@ -1,8 +1,7 @@
 import abc
-from typing import Union, List, Tuple
 
 import torch
-from torch import nn, Size
+from torch import nn
 from torch.types import _size
 
 from .svd_utils import MemEfficientSVD
@@ -17,6 +16,12 @@ class InverseTask(abc.ABC):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Implements `A @ x + ϵ` from the paper."""
         return self.A(x) + self.noise(x.shape[0])
+
+    @property
+    @abc.abstractmethod
+    def output_shape(self):
+        """Returns shape after applying `A`."""
+        ...
 
     @abc.abstractmethod
     def noise(self, n: int) -> torch.Tensor:
@@ -56,11 +61,6 @@ class InverseTask(abc.ABC):
         """Implements `P^{-1}(Λ) @ y` from the paper."""
         ...
 
-    @abc.abstractmethod
-    def get_output_shape(self):
-        """Returns shape after applying `A`."""
-        ...
-
 
 class DecomposeddSVDInverseTask(InverseTask, nn.Module):
     def __init__(self, x_shape: _size):
@@ -85,6 +85,10 @@ class DecomposeddSVDInverseTask(InverseTask, nn.Module):
     def A_ch(self) -> torch.Tensor:
         """The linear operator on the channels of the image."""
         return torch.eye(self.x_shape[0])
+
+    @property
+    def output_shape(self):
+        return (self.A_ch.shape[0], self.A_row.shape[0], self.A_col.shape[0])
 
     def transform(self, x: torch.Tensor) -> torch.Tensor:
         return self.svd.Vt(x)
@@ -120,12 +124,8 @@ class DecomposeddSVDInverseTask(InverseTask, nn.Module):
         x = self.svd.S_inv(x)
         return x
 
-    def get_output_shape(self):
-        return self.x_shape
-
 
 class CombinedTask(DecomposeddSVDInverseTask):
-
     def __init__(self, tasks: list[DecomposeddSVDInverseTask]):
         assert len(tasks) >= 2, "The list of tasks should contain at least two tasks"
         # Call the initializers of the base classes first
@@ -175,6 +175,3 @@ class CombinedTask(DecomposeddSVDInverseTask):
             combined_noise = task.A(combined_noise) + task.noise(n)
 
         return combined_noise
-
-
-

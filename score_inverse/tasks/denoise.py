@@ -11,4 +11,4 @@ class DenoiseTask(DecomposeddSVDInverseTask):
 
     def noise(self, n: int) -> torch.Tensor:
         # TODO: Add option to add different kind of noise (e.g. shot noise)
-        return self.noise_std * torch.randn((n, *self.x_shape))
+        return self.noise_std * torch.randn((n, *self.output_shape))
