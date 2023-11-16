@@ -5,7 +5,7 @@ from torchvision.transforms import CenterCrop, Compose, Resize, ToTensor
 
 
 class CelebA(Dataset):
-    def __init__(self, img_size: int = 64) -> None:
+    def __init__(self) -> None:
         super().__init__()
 
         self.dataset = _CelebA(
@@ -14,13 +14,13 @@ class CelebA(Dataset):
             transform=Compose(
                 [
                     CenterCrop(140),
-                    Resize(img_size, antialias=True),
+                    Resize(256, antialias=True),
                     ToTensor(),
                 ]
             ),
             split="test",
         )
-        self.img_size = (3, img_size, img_size)
+        self.img_size = (3, 256, 256)
 
     def __len__(self) -> int:
         return len(self.dataset)
