@@ -10,3 +10,6 @@ torch
 torchvision
 matplotlib
 scikit-image
+torchmetrics
+absl-py
+pandas

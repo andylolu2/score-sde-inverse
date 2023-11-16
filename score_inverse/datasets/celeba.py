@@ -1,8 +1,7 @@
 import torch
-
-from torchvision.datasets import CelebA as _CelebA
-from torchvision.transforms import ToTensor, Resize, Compose, CenterCrop
 from torch.utils.data import Dataset
+from torchvision.datasets import CelebA as _CelebA
+from torchvision.transforms import CenterCrop, Compose, Resize, ToTensor
 
 
 class CelebA(Dataset):
@@ -19,6 +18,7 @@ class CelebA(Dataset):
                     ToTensor(),
                 ]
             ),
+            split="test",
         )
         self.img_size = (3, img_size, img_size)
 

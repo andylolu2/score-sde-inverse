@@ -1,7 +1,7 @@
 import torch
+from torch.utils.data import Dataset
 from torchvision.datasets import CIFAR10 as _CIFAR10
 from torchvision.transforms import ToTensor
-from torch.utils.data import Dataset
 
 
 class CIFAR10(Dataset):
@@ -9,7 +9,10 @@ class CIFAR10(Dataset):
         super().__init__()
 
         self.dataset = _CIFAR10(
-            "~/.cache/torchvision", download=True, transform=ToTensor()
+            "~/.cache/torchvision",
+            download=True,
+            transform=ToTensor(),
+            train=False,
         )
         self.img_size = (3, 32, 32)
 
