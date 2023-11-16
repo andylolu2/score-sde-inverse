@@ -5,7 +5,7 @@ from torch import nn
 
 class MemEfficientSVD(nn.Module):
     def __init__(self, A_row: torch.Tensor, A_col: torch.Tensor, A_ch: torch.Tensor):
-        """Implements memory-efficient SVD when A can be decomposed several componentst.
+        """Implements memory-efficient SVD when A can be decomposed several components.
 
         Specifically, A can be decomposed into
         A = A_row ⊗ A_col ⊗ A_ch  ((w, w') ⊗ (h, h') ⊗ (c, c')) = (w h c, w' h' c')

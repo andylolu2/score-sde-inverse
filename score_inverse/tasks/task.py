@@ -113,3 +113,42 @@ class DecomposeddSVDInverseTask(InverseTask, nn.Module):
         x = self.svd.Ut(y)
         x = self.svd.S_inv(x)
         return x
+
+
+class CombinedTask(DecomposeddSVDInverseTask):
+    def __init__(self, task1, task2):
+        # Call the initializers of the base classes first
+        InverseTask.__init__(self)
+        nn.Module.__init__(self)
+
+        # Assign the tasks
+        self.task1 = task1
+        self.task2 = task2
+
+        # Set the x_shape based on the task shapes
+        self.x_shape = task1.x_shape
+
+        # Initialize the combined SVD using the composed operators
+        self.svd = MemEfficientSVD(self.A_row, self.A_col, self.A_ch)
+
+    @property
+    def A_row(self):
+        # Combine the row-wise operators of both tasks
+        return torch.matmul(self.task2.A_row, self.task1.A_row)
+
+    @property
+    def A_col(self):
+        # Combine the column-wise operators of both tasks
+        return torch.matmul(self.task2.A_col, self.task1.A_col)
+
+    @property
+    def A_ch(self):
+        # Combine the channel-wise operators of both tasks
+        return torch.matmul(self.task2.A_ch, self.task1.A_ch)
+
+    def noise(self, n):
+        """A_2 ( A_1 x + noise_1) + noise_2
+
+        A_2 A_1 x + (A_2 noise_1 + noise_2)
+        """
+        return self.task2.A(self.task1.noise(n)) + self.task2.noise(n)
