@@ -1,7 +1,8 @@
 import abc
+from typing import Union, List, Tuple
 
 import torch
-from torch import nn
+from torch import nn, Size
 from torch.types import _size
 
 from .svd_utils import MemEfficientSVD
@@ -15,7 +16,7 @@ class InverseTask(abc.ABC):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Implements `A @ x + ϵ` from the paper."""
-        return self.A(x) + self.noise(len(x))
+        return self.A(x) + self.noise(x.shape[0])
 
     @abc.abstractmethod
     def noise(self, n: int) -> torch.Tensor:
@@ -169,19 +170,9 @@ class CombinedTask(DecomposeddSVDInverseTask):
 
         A_2 A_1 x + (A_2 noise_1 + noise_2)
         """
-        print(n)
-        # Generate initial noise from the first task
         combined_noise = self.tasks[0].noise(n)
-
-        # Apply transformations and add noise from subsequent tasks
         for task in self.tasks[1:]:
-            # Apply the A operator of the next task to the existing noise
-            combined_noise = task.transform(task.drop(combined_noise))
-            # Ensure shape compatibility
-            additional_noise = task.noise(n)
-            assert combined_noise.shape == additional_noise.shape, "Noise shapes are not compatible"
-            # Add the noise of the next task
-            combined_noise += additional_noise
+            combined_noise = task.A(combined_noise) + task.noise(n)
 
         return combined_noise
 
