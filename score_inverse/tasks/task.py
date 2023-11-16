@@ -116,17 +116,18 @@ class DecomposeddSVDInverseTask(InverseTask, nn.Module):
 
 
 class CombinedTask(DecomposeddSVDInverseTask):
-    def __init__(self, task1, task2):
+
+    def __init__(self, tasks: list[DecomposeddSVDInverseTask]):
+        assert len(tasks) >= 2, "The list of tasks should contain at least two tasks"
         # Call the initializers of the base classes first
         InverseTask.__init__(self)
         nn.Module.__init__(self)
 
         # Assign the tasks
-        self.task1 = task1
-        self.task2 = task2
+        self.tasks = tasks
 
         # Set the x_shape based on the task shapes
-        self.x_shape = task1.x_shape
+        self.x_shape = tasks[0].x_shape
 
         # Initialize the combined SVD using the composed operators
         self.svd = MemEfficientSVD(self.A_row, self.A_col, self.A_ch)
@@ -134,21 +135,47 @@ class CombinedTask(DecomposeddSVDInverseTask):
     @property
     def A_row(self):
         # Combine the row-wise operators of both tasks
-        return torch.matmul(self.task2.A_row, self.task1.A_row)
+        curr = self.tasks[0].A_row
+        for task in self.tasks[1:]:
+            curr = torch.matmul(task.A_row, curr)
+        return curr
 
     @property
     def A_col(self):
         # Combine the column-wise operators of both tasks
-        return torch.matmul(self.task2.A_col, self.task1.A_col)
+        curr = self.tasks[0].A_col
+        for task in self.tasks[1:]:
+            curr = torch.matmul(task.A_col, curr)
+        return curr
 
     @property
     def A_ch(self):
         # Combine the channel-wise operators of both tasks
-        return torch.matmul(self.task2.A_ch, self.task1.A_ch)
+        curr = self.tasks[0].A_ch
+        for task in self.tasks[1:]:
+            curr = torch.matmul(task.A_ch, curr)
+        return curr
 
     def noise(self, n):
         """A_2 ( A_1 x + noise_1) + noise_2
 
         A_2 A_1 x + (A_2 noise_1 + noise_2)
         """
-        return self.task2.A(self.task1.noise(n)) + self.task2.noise(n)
+        print(n)
+        # Generate initial noise from the first task
+        combined_noise = self.tasks[0].noise(n)
+
+        # Apply transformations and add noise from subsequent tasks
+        for task in self.tasks[1:]:
+            # Apply the A operator of the next task to the existing noise
+            combined_noise = task.transform(task.drop(combined_noise))
+            # Ensure shape compatibility
+            additional_noise = task.noise(n)
+            assert combined_noise.shape == additional_noise.shape, "Noise shapes are not compatible"
+            # Add the noise of the next task
+            combined_noise += additional_noise
+
+        return combined_noise
+
+
+
