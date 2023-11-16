@@ -1,7 +1,8 @@
 import abc
+from typing import Union, List, Tuple
 
 import torch
-from torch import nn
+from torch import nn, Size
 from torch.types import _size
 
 from .svd_utils import MemEfficientSVD
@@ -15,7 +16,7 @@ class InverseTask(abc.ABC):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Implements `A @ x + ϵ` from the paper."""
-        return self.A(x) + self.noise(len(x))
+        return self.A(x) + self.noise(x.shape[0])
 
     @abc.abstractmethod
     def noise(self, n: int) -> torch.Tensor:
@@ -53,6 +54,11 @@ class InverseTask(abc.ABC):
     @abc.abstractmethod
     def drop_inv(self, y: torch.Tensor) -> torch.Tensor:
         """Implements `P^{-1}(Λ) @ y` from the paper."""
+        ...
+
+    @abc.abstractmethod
+    def get_output_shape(self):
+        """Returns shape after applying `A`."""
         ...
 
 
@@ -114,19 +120,23 @@ class DecomposeddSVDInverseTask(InverseTask, nn.Module):
         x = self.svd.S_inv(x)
         return x
 
+    def get_output_shape(self):
+        return self.x_shape
+
 
 class CombinedTask(DecomposeddSVDInverseTask):
-    def __init__(self, task1, task2):
+
+    def __init__(self, tasks: list[DecomposeddSVDInverseTask]):
+        assert len(tasks) >= 2, "The list of tasks should contain at least two tasks"
         # Call the initializers of the base classes first
         InverseTask.__init__(self)
         nn.Module.__init__(self)
 
         # Assign the tasks
-        self.task1 = task1
-        self.task2 = task2
+        self.tasks = tasks
 
         # Set the x_shape based on the task shapes
-        self.x_shape = task1.x_shape
+        self.x_shape = tasks[0].x_shape
 
         # Initialize the combined SVD using the composed operators
         self.svd = MemEfficientSVD(self.A_row, self.A_col, self.A_ch)
@@ -134,21 +144,37 @@ class CombinedTask(DecomposeddSVDInverseTask):
     @property
     def A_row(self):
         # Combine the row-wise operators of both tasks
-        return torch.matmul(self.task2.A_row, self.task1.A_row)
+        curr = self.tasks[0].A_row
+        for task in self.tasks[1:]:
+            curr = torch.matmul(task.A_row, curr)
+        return curr
 
     @property
     def A_col(self):
         # Combine the column-wise operators of both tasks
-        return torch.matmul(self.task2.A_col, self.task1.A_col)
+        curr = self.tasks[0].A_col
+        for task in self.tasks[1:]:
+            curr = torch.matmul(task.A_col, curr)
+        return curr
 
     @property
     def A_ch(self):
         # Combine the channel-wise operators of both tasks
-        return torch.matmul(self.task2.A_ch, self.task1.A_ch)
+        curr = self.tasks[0].A_ch
+        for task in self.tasks[1:]:
+            curr = torch.matmul(task.A_ch, curr)
+        return curr
 
     def noise(self, n):
         """A_2 ( A_1 x + noise_1) + noise_2
 
         A_2 A_1 x + (A_2 noise_1 + noise_2)
         """
-        return self.task2.A(self.task1.noise(n)) + self.task2.noise(n)
+        combined_noise = self.tasks[0].noise(n)
+        for task in self.tasks[1:]:
+            combined_noise = task.A(combined_noise) + task.noise(n)
+
+        return combined_noise
+
+
+
