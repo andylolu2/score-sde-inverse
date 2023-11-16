@@ -55,6 +55,11 @@ class InverseTask(abc.ABC):
         """Implements `P^{-1}(Λ) @ y` from the paper."""
         ...
 
+    @abc.abstractmethod
+    def get_output_shape(self):
+        """Returns shape after applying `A`."""
+        ...
+
 
 class DecomposeddSVDInverseTask(InverseTask, nn.Module):
     def __init__(self, x_shape: _size):
@@ -113,6 +118,9 @@ class DecomposeddSVDInverseTask(InverseTask, nn.Module):
         x = self.svd.Ut(y)
         x = self.svd.S_inv(x)
         return x
+
+    def get_output_shape(self):
+        return self.x_shape
 
 
 class CombinedTask(DecomposeddSVDInverseTask):

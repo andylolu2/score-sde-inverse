@@ -30,6 +30,11 @@ class DeblurTask(DecomposeddSVDInverseTask):
 
         super().__init__(x_shape)
 
+    def get_output_shape(self):
+        new_height = self.x_shape[1] - (self.kernel_size - 1)
+        new_width = self.x_shape[2] - (self.kernel_size - 1)
+        return self.x_shape[0], new_height, new_width
+
     @staticmethod
     def linearize_kernel(kernel: torch.Tensor, input_size: int) -> torch.Tensor:
         A = torch.zeros(input_size - 2 * (kernel.shape[0] // 2), input_size)
@@ -49,4 +54,4 @@ class DeblurTask(DecomposeddSVDInverseTask):
         return self.linearize_kernel(self.kernel_1d, self.x_shape[2])
 
     def noise(self, n: int) -> torch.Tensor:
-        return torch.zeros(n, *self.x_shape)
+        return torch.zeros(n, *self.get_output_shape())
