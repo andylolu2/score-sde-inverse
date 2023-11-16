@@ -49,4 +49,4 @@ class DeblurTask(DecomposeddSVDInverseTask):
         return self.linearize_kernel(self.kernel_1d, self.x_shape[2])
 
     def noise(self, n: int) -> torch.Tensor:
-        return torch.tensor(0)
+        return torch.zeros(n, *self.x_shape)
