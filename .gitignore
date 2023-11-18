@@ -39,5 +39,6 @@ checkpoints/*
 
 CIFAR10/
 data/
+datasets/
 
 venv/
