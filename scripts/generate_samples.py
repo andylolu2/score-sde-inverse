@@ -14,7 +14,12 @@ from score_inverse.models.utils import create_model
 from score_inverse.sampling import get_corrector, get_predictor
 from score_inverse.sampling.inverse import get_pc_inverse_solver
 from score_inverse.sde import get_sde
-from score_inverse.tasks.deblur import DeblurTask
+from score_inverse.tasks import (
+    CombinedTask,
+    DeblurTask,
+    DenoiseTask,
+    SuperResolutionTask,
+)
 
 FLAGS = flags.FLAGS
 flags.DEFINE_enum("dataset", "cifar10", ["cifar10", "celeba"], "Dataset to use.")
@@ -24,8 +29,13 @@ flags.DEFINE_integer("num_batches", 1, "Number of samples to generate")
 flags.DEFINE_integer("samples_per_image", 1, "No. of reconstructed samples per image")
 flags.DEFINE_string("save_dir", "./logs/samples", "Directory to save samples")
 flags.DEFINE_float("lambda_", 0.1, "Lambda parameter for inverse task")
-flags.DEFINE_enum("task", "deblur_gaussian", ["deblur_gaussian"], "Inverse task to use")
-flags.DEFINE_enum("sampling_method", "ode", ["pc", "ode"], "Sampling method to use")
+flags.DEFINE_enum(
+    "task",
+    "deblur_gaussian",
+    ["deblur_gaussian", "sr_4x", "sr_16x_noisy"],
+    "Inverse task to use",
+)
+flags.DEFINE_enum("sampling_method", "pc", ["pc", "ode"], "Sampling method to use")
 
 
 def main(_):
@@ -36,7 +46,7 @@ def main(_):
     elif FLAGS.dataset == "celeba":
         config = get_celeba_config()
         ckpt_path = "checkpoints/ve/celebahq_256_ncsnpp_continuous/checkpoint_48.pth"
-        dataset = CelebA(img_size=config.data.image_size)
+        dataset = CelebA()
     else:
         raise ValueError(f"Unknown dataset {FLAGS.dataset}")
 
@@ -59,7 +69,7 @@ def main(_):
         logging.info("Sampling batch %d...", i)
 
         x = x.to(device=config.device)
-        y = inverse_task.A(x)
+        y = inverse_task.forward(x)
         x_hat, _ = sampling_fn(score_model, y)
 
         for i in range(FLAGS.batch_size):
@@ -99,6 +109,14 @@ def get_inverse_task(config, dataset, task_name: str):
         return DeblurTask(dataset.img_size, kernel_type="gaussian", kernel_size=5).to(
             device=config.device
         )
+    elif task_name == "sr_4x":
+        return SuperResolutionTask(dataset.img_size, scale_factor=4).to(
+            device=config.device
+        )
+    elif task_name == "sr_16x_noisy":
+        sr = SuperResolutionTask(dataset.img_size, scale_factor=16)
+        denoise = DenoiseTask(sr.output_shape, noise_std=0.2)
+        return CombinedTask([sr, denoise]).to(device=config.device)
     else:
         raise ValueError(f"Unknown inverse task {task_name}")
 

@@ -15,7 +15,7 @@ class InverseTask(abc.ABC):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Implements `A @ x + ϵ` from the paper."""
-        return self.A(x) + self.noise(x.shape[0])
+        return self.A(x) + self.noise(x.shape[0]).to(x.device)
 
     @property
     @abc.abstractmethod
@@ -133,7 +133,7 @@ class CombinedTask(DecomposeddSVDInverseTask):
         nn.Module.__init__(self)
 
         # Assign the tasks
-        self.tasks = tasks
+        self.tasks = nn.ModuleList(tasks)
 
         # Set the x_shape based on the task shapes
         self.x_shape = tasks[0].x_shape
@@ -170,8 +170,10 @@ class CombinedTask(DecomposeddSVDInverseTask):
 
         A_2 A_1 x + (A_2 noise_1 + noise_2)
         """
-        combined_noise = self.tasks[0].noise(n)
+        combined_noise = self.tasks[0].noise(n).to(self.svd.Vs[0].device)
         for task in self.tasks[1:]:
-            combined_noise = task.A(combined_noise) + task.noise(n)
+            combined_noise = task.A(combined_noise) + task.noise(n).to(
+                self.svd.Vs[0].device
+            )
 
         return combined_noise
