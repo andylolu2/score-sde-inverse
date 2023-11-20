@@ -42,3 +42,6 @@ data/
 datasets/
 
 venv/
+
+# Evalution output
+logs/
