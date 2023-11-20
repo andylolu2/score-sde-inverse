@@ -68,6 +68,3 @@ class SuperResolutionTask(DecomposeddSVDInverseTask):
                 A[i, j_effective] += kernel[j]
 
         return A
-
-    def noise(self, n: int) -> torch.Tensor:
-        return torch.zeros(n, *self.output_shape)

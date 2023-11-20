@@ -15,17 +15,16 @@ class InverseTask(abc.ABC):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Implements `A @ x + ϵ` from the paper."""
-        return self.A(x) + self.noise(x)
+        return self.add_noise(self.A(x))
+
+    def add_noise(self, x: torch.Tensor) -> torch.Tensor:
+        """Adds the `ϵ` from the paper."""
+        return x
 
     @property
     @abc.abstractmethod
     def output_shape(self):
         """Returns shape after applying `A`."""
-        ...
-
-    @abc.abstractmethod
-    def noise(self, x: torch.tensor) -> torch.Tensor:
-        """Implements `ϵ` from the paper."""
         ...
 
     @abc.abstractmethod
@@ -127,53 +126,42 @@ class DecomposeddSVDInverseTask(InverseTask, nn.Module):
 
 class CombinedTask(DecomposeddSVDInverseTask):
     def __init__(self, tasks: list[DecomposeddSVDInverseTask]):
-        assert len(tasks) >= 2, "The list of tasks should contain at least two tasks"
-        # Call the initializers of the base classes first
         InverseTask.__init__(self)
         nn.Module.__init__(self)
 
-        # Assign the tasks
-        self.tasks = nn.ModuleList(tasks)
-
-        # Set the x_shape based on the task shapes
         self.x_shape = tasks[0].x_shape
-
-        # Initialize the combined SVD using the composed operators
+        self.tasks = nn.ModuleList(tasks)
         self.svd = MemEfficientSVD(self.A_row, self.A_col, self.A_ch)
 
     @property
     def A_row(self):
         # Combine the row-wise operators of both tasks
-        curr = self.tasks[0].A_row
-        for task in self.tasks[1:]:
+        curr = torch.eye(self.x_shape[1])
+        for task in self.tasks:
             curr = torch.matmul(task.A_row, curr)
         return curr
 
     @property
     def A_col(self):
         # Combine the column-wise operators of both tasks
-        curr = self.tasks[0].A_col
-        for task in self.tasks[1:]:
+        curr = torch.eye(self.x_shape[2])
+        for task in self.tasks:
             curr = torch.matmul(task.A_col, curr)
         return curr
 
     @property
     def A_ch(self):
         # Combine the channel-wise operators of both tasks
-        curr = self.tasks[0].A_ch
-        for task in self.tasks[1:]:
+        curr = torch.eye(self.x_shape[0])
+        for task in self.tasks:
             curr = torch.matmul(task.A_ch, curr)
         return curr
 
-    def noise(self, n):
-        """A_2 ( A_1 x + noise_1) + noise_2
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Implements `A @ x + ϵ` from the paper."""
+        for task in self.tasks:
+            x = task.forward(x)
+        return x
 
-        A_2 A_1 x + (A_2 noise_1 + noise_2)
-        """
-        combined_noise = self.tasks[0].noise(n).to(self.svd.Vs[0].device)
-        for task in self.tasks[1:]:
-            combined_noise = task.A(combined_noise) + task.noise(n).to(
-                self.svd.Vs[0].device
-            )
-
-        return combined_noise
+    def add_noise(self, x: torch.Tensor):
+        raise NotImplementedError()

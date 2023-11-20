@@ -23,6 +23,5 @@ class DenoiseTask(DecomposeddSVDInverseTask):
         else:
             raise Exception("Invalid noise type")
 
-    def noise(self, x: torch.Tensor) -> torch.Tensor:
-        # TODO
-        return self.noiser(x) - x
+    def add_noise(self, x: torch.Tensor) -> torch.Tensor:
+        return self.noiser(x)
