@@ -18,7 +18,7 @@ class DenoiseTask(DecomposeddSVDInverseTask):
             self.noiser = partial(gaussian_noise, severity=severity)
         elif noise_type in ["poisson", "shot"]:
             self.noiser = partial(shot_noise, severity=severity)
-        elif noise_type in ["salt and pepper", "impulse"]:
+        elif noise_type in ["salt_and_pepper", "impulse"]:
             self.noiser = partial(impulse_noise, severity=severity)
         else:
             raise Exception("Invalid noise type")
