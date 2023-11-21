@@ -13,3 +13,4 @@ scikit-image
 torchmetrics
 absl-py
 pandas
+torchdrift
