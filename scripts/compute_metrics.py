@@ -38,9 +38,12 @@ def main(_):
 
     for name, value in values.items():
         mean = np.mean(value)
-        low, median, high = bootstrap(value)
+        p5, median, p95 = bootstrap(value)
+        delta = (p95 - p5) / 2
 
-        print(f"{name}: {mean:.4f} ({low:.4f}, {median:.4f}, {high:.4f})")
+        print(
+            f"{name}: {mean:.4f} +/- {delta:.4f} ({p5=:.4f}, {median=:.4f}, {p95=:.4f})"
+        )
 
 
 def bootstrap(data, n=10000, func=np.mean):
