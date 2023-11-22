@@ -5,14 +5,14 @@ from torchvision.transforms import ToTensor
 
 
 class CIFAR10(Dataset):
-    def __init__(self) -> None:
+    def __init__(self, train=False) -> None:
         super().__init__()
 
         self.dataset = _CIFAR10(
             "~/.cache/torchvision",
             download=True,
             transform=ToTensor(),
-            train=False,
+            train=train,
         )
         self.img_size = (3, 32, 32)
 
