@@ -43,7 +43,7 @@ def main(_):
         l_bound, median, u_bound = bootstrap(value, confidence=FLAGS.confidence)
 
         print(
-            f"{name}: {mean:.4f} +/- {std:.4f} (p{100*(1-FLAGS.confidence)/2:.1f}={l_bound=:.4f}, {median=:.4f}, p{100*(1+FLAGS.confidence)/2:.1f}={u_bound:.4f})"
+            f"{name}: {mean:.4f} +/- {std:.4f} (p{100*(1-FLAGS.confidence)/2:.1f}={l_bound:.4f}, {median=:.4f}, p{100*(1+FLAGS.confidence)/2:.1f}={u_bound:.4f})"
         )
 
 
