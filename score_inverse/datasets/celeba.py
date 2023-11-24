@@ -5,7 +5,7 @@ from torchvision.transforms import CenterCrop, Compose, Resize, ToTensor
 
 
 class CelebA(Dataset):
-    def __init__(self) -> None:
+    def __init__(self, train=True) -> None:
         super().__init__()
 
         self.dataset = _CelebA(
@@ -18,7 +18,7 @@ class CelebA(Dataset):
                     ToTensor(),
                 ]
             ),
-            split="test",
+            split='train' if train else 'test',
         )
         self.img_size = (3, 256, 256)
 

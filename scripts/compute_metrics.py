@@ -8,6 +8,7 @@ from torchvision.transforms.functional import to_tensor
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string("samples_dir", "./logs/samples", "Directory to save samples")
+flags.DEFINE_float("confidence", 0.95, "Confidence of computed metrics")
 
 
 def main(_):
@@ -38,25 +39,25 @@ def main(_):
 
     for name, value in values.items():
         mean = np.mean(value)
-        p5, median, p95 = bootstrap(value)
-        delta = (p95 - p5) / 2
+        std = np.std(value)
+        l_bound, median, u_bound = bootstrap(value, confidence=FLAGS.confidence)
 
         print(
-            f"{name}: {mean:.4f} +/- {delta:.4f} ({p5=:.4f}, {median=:.4f}, {p95=:.4f})"
+            f"{name}: {mean:.4f} +/- {std:.4f} (p{100*(1-FLAGS.confidence)/2:.1f}={l_bound:.4f}, {median=:.4f}, p{100*(1+FLAGS.confidence)/2:.1f}={u_bound:.4f})"
         )
 
 
-def bootstrap(data, n=10000, func=np.mean):
+def bootstrap(data, n=10000, func=np.mean, confidence=0.95):
     """Bootstrap estimate of CI for statistic.
 
-    Returns the 5%, 50%, 95% percentiles of the bootstrap distribution.
+    Returns the lower percentile bound, median, and upper percentile bound based on the provided confidence from the bootstrap distribution.
     """
     data = np.array(data)
 
     samples = np.random.choice(data, size=(n, len(data)))
     stats = [func(s) for s in samples]
 
-    return np.percentile(stats, [5, 50, 95])
+    return np.percentile(stats, [100*(1-confidence)/2, 50, 100*(1+confidence)/2])
 
 
 if __name__ == "__main__":
