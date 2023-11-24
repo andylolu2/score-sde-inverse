@@ -18,7 +18,7 @@ def main(_):
         "ssim": StructuralSimilarityIndexMeasure(data_range=(0, 1)),
         "psnr": PeakSignalNoiseRatio(data_range=(0, 1)),
     }
-    values = {name: [] for name in metrics.keys()}
+    metric_values = {name: [] for name in metrics.keys()}
 
     for dataset_item_dir in samples_dir.iterdir():
         if not dataset_item_dir.is_dir():
@@ -35,29 +35,36 @@ def main(_):
 
             for name, metric in metrics.items():
                 value = metric(reconstructed, target)
-                values[name].append(value.cpu().numpy())
+                metric_values[name].append(value.cpu().numpy())
 
-    for name, value in values.items():
-        mean = np.mean(value)
-        std = np.std(value)
-        l_bound, median, u_bound = bootstrap(value, confidence=FLAGS.confidence)
-
+    for name, values in metric_values.items():
+        # Compute confidence interval for the metric
+        # We do it in two ways: Bootstrapping / statistical.
+        # They should give similar results.
+        means = bootstrap(values, func=np.mean)
+        mean = np.mean(means)
+        std = np.std(means)
+        p025, p975 = np.quantile(means, [0.025, 0.975])
         print(
-            f"{name}: {mean:.4f} +/- {std:.4f} (p{100*(1-FLAGS.confidence)/2:.1f}={l_bound:.4f}, {median=:.4f}, p{100*(1+FLAGS.confidence)/2:.1f}={u_bound:.4f})"
+            f"{name}: {mean:.4f} +/- {std:.4f} 95% CI: ({p025:.4f} - {p975:.4f}) (Bootstrap)"
+        )
+
+        mean = np.mean(values)
+        std = np.std(values) / np.sqrt(len(values))
+        p025, p975 = mean - 1.96 * std, mean + 1.96 * std
+        print(
+            f"{name}: {mean:.4f} +/- {std:.4f} 95% CI ({p025:.4f} - {p975:.4f}) (Statistical)"
         )
 
 
-def bootstrap(data, n=10000, func=np.mean, confidence=0.95):
-    """Bootstrap estimate of CI for statistic.
-
-    Returns the lower percentile bound, median, and upper percentile bound based on the provided confidence from the bootstrap distribution.
-    """
+def bootstrap(data, n=10000, func=np.mean):
+    """Bootstrap estimate of distribution of statistics."""
     data = np.array(data)
 
     samples = np.random.choice(data, size=(n, len(data)))
     stats = [func(s) for s in samples]
 
-    return np.percentile(stats, [100*(1-confidence)/2, 50, 100*(1+confidence)/2])
+    return stats
 
 
 if __name__ == "__main__":
