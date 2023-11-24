@@ -5,7 +5,7 @@ from torchvision.transforms import ToTensor
 
 
 class CIFAR10(Dataset):
-    def __init__(self, train=False) -> None:
+    def __init__(self, train=True) -> None:
         super().__init__()
 
         self.dataset = _CIFAR10(
