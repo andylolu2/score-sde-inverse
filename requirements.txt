@@ -13,5 +13,6 @@ scikit-image
 torchmetrics
 absl-py
 pandas
+torchdrift
 bayesian-optimization
 lpips

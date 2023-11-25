@@ -37,8 +37,14 @@ checkpoints/*
 # Built Visual Studio Code Extensions
 *.vsix
 
-# Ignore all notebooks, git add explicitly if want to track them
-*.ipynb
+CIFAR10/
+data/
+datasets/
+
+venv/
+
+notebooks/super_resolution.ipynb
+notebooks/svd_test.ipynb
 
 # Evalution output
 logs/
