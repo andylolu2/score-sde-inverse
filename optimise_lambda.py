@@ -5,7 +5,7 @@ import pandas as pd
 
 
 
-from shared_utils import SharedUtils, compute_metrics
+from shared_utils import SharedUtils, compute_psnr
 
 FLAGS = flags.FLAGS
 flags.DEFINE_enum("dataset", "cifar10", ["cifar10", "celeba"], "Dataset to use.")
@@ -65,7 +65,7 @@ def objective_function(utils, lambda_value):
         x_hat, _ = sampling_fn(utils.score_model, y)
 
         print(f"Computing metrics for image {i}...")
-        psnr = compute_metrics(x, x_hat)
+        psnr = compute_psnr(x, x_hat)
 
         psnr_total += psnr
         count += 1
