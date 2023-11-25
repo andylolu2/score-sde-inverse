@@ -35,11 +35,11 @@ class SharedUtils:
     def __init__(self, FLAGS, is_training=False):
         if FLAGS.dataset == "cifar10":
             self.config = get_cifar10_config()
-            self.ckpt_path = "scripts/checkpoints/ve/cifar10_ncsnpp_deep_continuous/checkpoint_12.pth"
+            self.ckpt_path = "checkpoints/ve/cifar10_ncsnpp_deep_continuous/checkpoint_12.pth"
             self.dataset = CIFAR10(train=is_training)
         elif FLAGS.dataset == "celeba":
             self.config = get_celeba_config()
-            self.ckpt_path = "scripts/checkpoints/ve/celebahq_256_ncsnpp_continuous/checkpoint_48.pth"
+            self.ckpt_path = "checkpoints/ve/celebahq_256_ncsnpp_continuous/checkpoint_48.pth"
             self.dataset = CelebA(train=is_training)
         else:
             raise ValueError(f"Unknown dataset {FLAGS.dataset}")

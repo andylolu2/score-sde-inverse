@@ -1,11 +1,10 @@
-from pathlib import Path
-from absl import app, flags, logging
+from absl import app, flags
 from bayes_opt import BayesianOptimization
 import pandas as pd
 
 
 
-from shared_utils import SharedUtils, compute_psnr
+from scripts.shared_utils import SharedUtils, compute_psnr
 
 FLAGS = flags.FLAGS
 flags.DEFINE_enum("dataset", "cifar10", ["cifar10", "celeba"], "Dataset to use.")
