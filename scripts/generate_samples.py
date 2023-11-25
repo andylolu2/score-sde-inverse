@@ -53,11 +53,11 @@ def main(_):
     if FLAGS.dataset == "cifar10":
         config = get_cifar10_config()
         ckpt_path = "checkpoints/ve/cifar10_ncsnpp_deep_continuous/checkpoint_12.pth"
-        dataset = CIFAR10()
+        dataset = CIFAR10(train=False)
     elif FLAGS.dataset == "celeba":
         config = get_celeba_config()
         ckpt_path = "checkpoints/ve/celebahq_256_ncsnpp_continuous/checkpoint_48.pth"
-        dataset = CelebA()
+        dataset = CelebA(train=False)
     else:
         raise ValueError(f"Unknown dataset {FLAGS.dataset}")
 

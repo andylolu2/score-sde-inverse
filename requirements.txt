@@ -14,5 +14,6 @@ torchmetrics
 absl-py
 pandas
 torchdrift
+scikit-learn
 bayesian-optimization
 lpips

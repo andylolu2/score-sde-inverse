@@ -9,6 +9,7 @@ import lpips
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string("samples_dir", "./logs/samples", "Directory to save samples")
+flags.DEFINE_float("confidence", 0.95, "Confidence of computed metrics")
 
 
 def main(_):
@@ -19,7 +20,7 @@ def main(_):
         "psnr": PeakSignalNoiseRatio(data_range=(0, 1)),
         "lpips": lpips.LPIPS(net="alex"),
     }
-    values = {name: [] for name in metrics.keys()}
+    metric_values = {name: [] for name in metrics.keys()}
 
     for dataset_item_dir in samples_dir.iterdir():
         if not dataset_item_dir.is_dir():
@@ -36,26 +37,36 @@ def main(_):
 
             for name, metric in metrics.items():
                 value = metric(reconstructed, target)
-                values[name].append(value.cpu().numpy())
+                metric_values[name].append(value.cpu().numpy())
 
-    for name, value in values.items():
-        mean = np.mean(value)
-        low, median, high = bootstrap(value)
+    for name, values in metric_values.items():
+        # Compute confidence interval for the metric
+        # We do it in two ways: Bootstrapping / statistical.
+        # They should give similar results.
+        means = bootstrap(values, func=np.mean)
+        mean = np.mean(means)
+        std = np.std(means)
+        p025, p975 = np.quantile(means, [0.025, 0.975])
+        print(
+            f"{name}: {mean:.4f} +/- {std:.4f} 95% CI: ({p025:.4f} - {p975:.4f}) (Bootstrap)"
+        )
 
-        print(f"{name}: {mean:.4f} ({low:.4f}, {median:.4f}, {high:.4f})")
+        mean = np.mean(values)
+        std = np.std(values) / np.sqrt(len(values))
+        p025, p975 = mean - 1.96 * std, mean + 1.96 * std
+        print(
+            f"{name}: {mean:.4f} +/- {std:.4f} 95% CI ({p025:.4f} - {p975:.4f}) (Statistical)"
+        )
 
 
 def bootstrap(data, n=10000, func=np.mean):
-    """Bootstrap estimate of CI for statistic.
-
-    Returns the 5%, 50%, 95% percentiles of the bootstrap distribution.
-    """
+    """Bootstrap estimate of distribution of statistics."""
     data = np.array(data)
 
     samples = np.random.choice(data, size=(n, len(data)))
     stats = [func(s) for s in samples]
 
-    return np.percentile(stats, [5, 50, 95])
+    return stats
 
 
 if __name__ == "__main__":
