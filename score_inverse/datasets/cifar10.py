@@ -1,18 +1,18 @@
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, random_split
 from torchvision.datasets import CIFAR10 as _CIFAR10
 from torchvision.transforms import ToTensor
 
 
 class CIFAR10(Dataset):
-    def __init__(self) -> None:
+    def __init__(self, is_training=False) -> None:
         super().__init__()
 
         self.dataset = _CIFAR10(
             "~/.cache/torchvision",
             download=True,
             transform=ToTensor(),
-            train=False,
+            train=is_training,
         )
         self.img_size = (3, 32, 32)
 
