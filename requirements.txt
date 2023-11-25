@@ -13,3 +13,5 @@ scikit-image
 torchmetrics
 absl-py
 pandas
+bayesian-optimization
+lpips
