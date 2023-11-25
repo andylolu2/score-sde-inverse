@@ -5,6 +5,7 @@ from absl import app, flags
 from PIL import Image
 from torchmetrics.image import PeakSignalNoiseRatio, StructuralSimilarityIndexMeasure
 from torchvision.transforms.functional import to_tensor
+import lpips
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string("samples_dir", "./logs/samples", "Directory to save samples")
@@ -17,6 +18,7 @@ def main(_):
     metrics = {
         "ssim": StructuralSimilarityIndexMeasure(data_range=(0, 1)),
         "psnr": PeakSignalNoiseRatio(data_range=(0, 1)),
+        "lpips": lpips.LPIPS(net="alex"),
     }
     metric_values = {name: [] for name in metrics.keys()}
 
