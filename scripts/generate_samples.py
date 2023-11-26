@@ -22,13 +22,13 @@ from score_inverse.tasks import (
     CombinedTask,
     DeblurTask,
     DenoiseTask,
-    SuperResolutionTask,
+    SuperResolutionTask, ColorizationTask,
 )
 
 FLAGS = flags.FLAGS
 flags.DEFINE_enum("dataset", "cifar10", ["cifar10", "celeba"], "Dataset to use.")
 flags.DEFINE_integer("num_scales", 50, "Number of discretisation steps")
-flags.DEFINE_integer("batch_size", 1, "Batch size")
+flags.DEFINE_integer("batch_size", 10, "Batch size")
 flags.DEFINE_integer("num_batches", 1, "Number of samples to generate")
 flags.DEFINE_integer("samples_per_image", 1, "No. of reconstructed samples per image")
 flags.DEFINE_string("save_dir", "./logs/samples", "Directory to save samples")
@@ -36,7 +36,7 @@ flags.DEFINE_float("lambda_", 0.1, "Lambda parameter for inverse task")
 flags.DEFINE_enum(
     "task",
     "deblur_gaussian",
-    ["deblur_gaussian", "sr_4x", "sr_16x_noisy", "denoise"],
+    ["deblur_gaussian", "sr_4x", "sr_16x_noisy", "denoise", "deblur_colorise", "denoise_colorise", "sr_colorise", "sr_deblur"],
     "Inverse task to use",
 )
 flags.DEFINE_enum("sampling_method", "pc", ["pc", "ode"], "Sampling method to use")
@@ -52,11 +52,11 @@ flags.DEFINE_integer("noise_severity", 1, "Noise severity from 1-5 based on http
 def main(_):
     if FLAGS.dataset == "cifar10":
         config = get_cifar10_config()
-        ckpt_path = "checkpoints/ve/cifar10_ncsnpp_deep_continuous/checkpoint_12.pth"
+        ckpt_path = "scripts/checkpoints/ve/cifar10_ncsnpp_deep_continuous/checkpoint_12.pth"
         dataset = CIFAR10(train=False)
     elif FLAGS.dataset == "celeba":
         config = get_celeba_config()
-        ckpt_path = "checkpoints/ve/celebahq_256_ncsnpp_continuous/checkpoint_48.pth"
+        ckpt_path = "scripts/checkpoints/ve/celebahq_256_ncsnpp_continuous/checkpoint_48.pth"
         dataset = CelebA(train=False)
     else:
         raise ValueError(f"Unknown dataset {FLAGS.dataset}")
@@ -77,13 +77,12 @@ def main(_):
         if i == FLAGS.num_batches:
             break
 
-        logging.info("Sampling batch %d...", i)
-
         x = x.to(device=config.device)
         y = inverse_task.forward(x)
         x_hat, _ = sampling_fn(score_model, y)
 
         for i in range(FLAGS.batch_size):
+            logging.info("Sampling image %d...", i)
             source = tensor_to_image(y[i])
             target = tensor_to_image(x[i])
             reconstructed = tensor_to_image(x_hat[i])
@@ -128,6 +127,26 @@ def get_inverse_task(config, dataset, task_name: str, noise_type: str, noise_sev
         sr = SuperResolutionTask(dataset.img_size, scale_factor=16)
         denoise = DenoiseTask(sr.output_shape, noise_type=noise_type, severity=noise_severity)
         return CombinedTask([sr, denoise]).to(device=config.device)
+    elif task_name == "deblur_colorise":
+        colorise = ColorizationTask(dataset.img_size)
+        deblur = DeblurTask(colorise.output_shape, kernel_type="gaussian", kernel_size=5).to(
+            device=config.device
+        )
+        return CombinedTask([colorise, deblur]).to(device=config.device)
+    elif task_name == "denoise_colorise":
+        colorise = ColorizationTask(dataset.img_size)
+        denoise = DenoiseTask(colorise.output_shape, noise_type=noise_type, severity=noise_severity)
+        return CombinedTask([colorise, denoise]).to(device=config.device)
+    elif task_name == "sr_colorise":
+        colorise = ColorizationTask(dataset.img_size)
+        sr = SuperResolutionTask(colorise.output_shape, scale_factor=16)
+        return CombinedTask([colorise, sr]).to(device=config.device)
+    elif task_name == "sr_deblur":
+        sr = SuperResolutionTask(dataset.img_size, scale_factor=16)
+        deblur = DeblurTask(sr.output_shape, kernel_type="gaussian", kernel_size=5).to(
+            device=config.device
+        )
+        return CombinedTask([sr,deblur]).to(device=config.device)
     elif task_name == 'denoise':
         return DenoiseTask(dataset.img_size, noise_type=noise_type, severity=noise_severity).to(device=config.device)
     else:
