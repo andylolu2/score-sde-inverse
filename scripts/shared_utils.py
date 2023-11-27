@@ -2,7 +2,6 @@ import torch
 import numpy as np
 from PIL import Image
 from absl import logging
-from torch.utils.data import random_split
 from torchmetrics.image import PeakSignalNoiseRatio
 from score_inverse.models.utils import create_model
 from score_inverse.models.ema import ExponentialMovingAverage
@@ -32,15 +31,15 @@ def compute_psnr(source, reconstructed):
 
 class SharedUtils:
 
-    def __init__(self, FLAGS, is_training=False):
+    def __init__(self, FLAGS, train=True):
         if FLAGS.dataset == "cifar10":
             self.config = get_cifar10_config()
             self.ckpt_path = "checkpoints/ve/cifar10_ncsnpp_deep_continuous/checkpoint_12.pth"
-            self.dataset = CIFAR10(train=is_training)
+            self.dataset = CIFAR10(train=train)
         elif FLAGS.dataset == "celeba":
             self.config = get_celeba_config()
             self.ckpt_path = "checkpoints/ve/celebahq_256_ncsnpp_continuous/checkpoint_48.pth"
-            self.dataset = CelebA(train=is_training)
+            self.dataset = CelebA(train=train)
         else:
             raise ValueError(f"Unknown dataset {FLAGS.dataset}")
 
@@ -49,11 +48,6 @@ class SharedUtils:
         self.data_loader = self.get_dataloader(FLAGS.samples_per_image, FLAGS.batch_size)
         self.score_model = self.load_checkpoint()
         self.inverse_task = self.get_inverse_task(FLAGS.task)
-
-    def get_validation_set(self, val_size):
-        train_size = len(self.dataset) - val_size
-        _, val_set = random_split(self.dataset, [train_size, val_size])
-        return val_set
 
     def get_dataloader(self, samples_per_image: int, batch_size: int):
         dataset_idx, sample_idx, batch = [], [], []
