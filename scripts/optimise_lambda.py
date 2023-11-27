@@ -16,8 +16,8 @@ from scripts.shared_utils import SharedUtils, compute_psnr
 FLAGS = flags.FLAGS
 flags.DEFINE_enum("dataset", "cifar10", ["cifar10", "celeba"], "Dataset to use.")
 flags.DEFINE_integer("num_scales", 100, "Number of discretisation steps")
-flags.DEFINE_integer("batch_size", 1, "Batch size")
-flags.DEFINE_integer("num_batches", 1, "Number of samples to generate")
+flags.DEFINE_integer("batch_size", 10, "Batch size")
+flags.DEFINE_integer("num_batches", 5, "Number of samples to generate")
 flags.DEFINE_integer(
     "samples_per_image", 1, "Number of reconstructed samples per image"
 )
