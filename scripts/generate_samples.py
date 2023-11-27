@@ -28,6 +28,7 @@ from score_inverse.tasks import (
 
 FLAGS = flags.FLAGS
 flags.DEFINE_enum("dataset", "cifar10", ["cifar10", "celeba"], "Dataset to use.")
+flags.DEFINE_bool("train", False, "Generate from the train set instead of the train set.")
 flags.DEFINE_integer("num_scales", 50, "Number of discretisation steps")
 flags.DEFINE_integer("batch_size", 10, "Batch size")
 flags.DEFINE_integer("num_batches", 1, "Number of samples to generate")
@@ -69,13 +70,13 @@ def main(_):
         ckpt_path = (
             "scripts/checkpoints/ve/cifar10_ncsnpp_deep_continuous/checkpoint_12.pth"
         )
-        dataset = CIFAR10(train=False)
+        dataset = CIFAR10(train=FLAGS.train)
     elif FLAGS.dataset == "celeba":
         config = get_celeba_config()
         ckpt_path = (
             "scripts/checkpoints/ve/celebahq_256_ncsnpp_continuous/checkpoint_48.pth"
         )
-        dataset = CelebA(train=False)
+        dataset = CelebA(train=FLAGS.train)
     else:
         raise ValueError(f"Unknown dataset {FLAGS.dataset}")
 
