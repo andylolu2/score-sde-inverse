@@ -30,7 +30,7 @@ flags.DEFINE_integer(
 flags.DEFINE_enum(
     "task", "denoise", ["deblur_gaussian", "denoise"], "Inverse task to use"
 )
-flags.DEFINE_string("save_dir", 'logs/bayes_opt', "Directory to save samples", required=True)
+flags.DEFINE_string("save_dir", './logs/bayes_opt', "Directory to save samples")
 
 iteration_counter = 0
 results = []
