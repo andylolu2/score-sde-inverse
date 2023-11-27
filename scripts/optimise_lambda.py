@@ -30,7 +30,7 @@ flags.DEFINE_integer(
 flags.DEFINE_enum(
     "task", "denoise", ["deblur_gaussian", "denoise"], "Inverse task to use"
 )
-flags.DEFINE_string("save_dir", None, "Directory to save samples", required=True)
+flags.DEFINE_string("save_dir", 'logs/bayes_opt', "Directory to save samples", required=True)
 
 iteration_counter = 0
 results = []
@@ -45,9 +45,9 @@ def main(_):
 
     optimizer = BayesianOptimization(
         f=lambda log_lambda: objective_function(utils, log_lambda),
-        pbounds={"log_lambda": (-3, 0)},
-        random_state=1,
-        allow_duplicate_points=True,
+        pbounds={"log_lambda": (-2, 0)},
+        random_state=42,
+        # allow_duplicate_points=True,
     )
     optimizer.set_gp_params(kernel=RBF(length_scale=2), normalize_y=True)
     optimizer.maximize(
