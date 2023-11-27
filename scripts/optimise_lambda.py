@@ -3,6 +3,8 @@ import os
 import sys
 from pathlib import Path
 
+sys.path.append(os.getcwd())
+
 import pandas as pd
 import torch
 from absl import app, flags
@@ -29,8 +31,6 @@ flags.DEFINE_enum(
     "task", "denoise", ["deblur_gaussian", "denoise"], "Inverse task to use"
 )
 flags.DEFINE_string("save_dir", None, "Directory to save samples", required=True)
-
-sys.path.append(os.getcwd())
 
 iteration_counter = 0
 results = []
@@ -71,22 +71,18 @@ def objective_function(utils, log_lambda):
     lambda_ = math.pow(10, log_lambda)
     iteration_counter += 1
     sampling_fn = utils.get_sampling_fn(lambda_)
-
-    dataset = torch.stack(
-        [utils.dataset[i] for i in range(FLAGS.batch_size * FLAGS.num_batches)]
-    )
+    dataset = torch.stack([utils.dataset[i] for i in range(FLAGS.batch_size*FLAGS.num_batches)])
     samples = []
 
     for i in range(FLAGS.num_batches):
-        x = dataset[i * FLAGS.batch_size : (i + 1) * FLAGS.batch_size].to(
-            utils.config.device
-        )
+        x = dataset[i*FLAGS.batch_size : (i+1)*FLAGS.batch_size].to(utils.config.device)
         y = utils.inverse_task.forward(x)
         x_hat, _ = sampling_fn(utils.score_model, y)
         samples.append(x_hat.detach().cpu())
 
     samples = torch.cat(samples)
     psnr = compute_psnr(dataset, samples)
+    torch.cuda.empty_cache()
 
     results.append({"iteration": iteration_counter, "lambda": lambda_, "psnr": psnr})
     return psnr
