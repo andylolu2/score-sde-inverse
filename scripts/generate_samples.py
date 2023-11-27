@@ -1,3 +1,5 @@
+import os
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -5,9 +7,7 @@ import torch
 from absl import app, flags, logging
 from PIL import Image
 
-import sys
-import os
-sys.path.append(os.getcwd()) # add the current directory to the path to import modules
+sys.path.append(os.getcwd())  # add the current directory to the path to import modules
 
 from configs.ve.celebahq_256_ncsnpp_continuous import get_config as get_celeba_config
 from configs.ve.cifar10_ncsnpp_deep_continuous import get_config as get_cifar10_config
@@ -19,10 +19,11 @@ from score_inverse.sampling import get_corrector, get_predictor
 from score_inverse.sampling.inverse import get_pc_inverse_solver
 from score_inverse.sde import get_sde
 from score_inverse.tasks import (
+    ColorizationTask,
     CombinedTask,
     DeblurTask,
     DenoiseTask,
-    SuperResolutionTask, ColorizationTask,
+    SuperResolutionTask,
 )
 
 FLAGS = flags.FLAGS
@@ -36,7 +37,16 @@ flags.DEFINE_float("lambda_", 0.1, "Lambda parameter for inverse task")
 flags.DEFINE_enum(
     "task",
     "deblur_gaussian",
-    ["deblur_gaussian", "sr_4x", "sr_16x_noisy", "denoise", "deblur_colorise", "denoise_colorise", "sr_colorise", "sr_deblur"],
+    [
+        "deblur_gaussian",
+        "sr_4x",
+        "sr_16x_noisy",
+        "denoise",
+        "deblur_colorise",
+        "denoise_colorise",
+        "sr_colorise",
+        "sr_deblur",
+    ],
     "Inverse task to use",
 )
 flags.DEFINE_enum("sampling_method", "pc", ["pc", "ode"], "Sampling method to use")
@@ -44,19 +54,27 @@ flags.DEFINE_enum(
     "noise_type",
     "normal",
     ["normal", "gaussian", "poisson", "shot", "salt_and_pepper", "impulse"],
-    "Type of noise to apply to denoising tasks"
+    "Type of noise to apply to denoising tasks",
 )
-flags.DEFINE_integer("noise_severity", 1, "Noise severity from 1-5 based on https://arxiv.org/abs/1903.12261")
+flags.DEFINE_integer(
+    "noise_severity",
+    1,
+    "Noise severity from 1-5 based on https://arxiv.org/abs/1903.12261",
+)
 
 
 def main(_):
     if FLAGS.dataset == "cifar10":
         config = get_cifar10_config()
-        ckpt_path = "scripts/checkpoints/ve/cifar10_ncsnpp_deep_continuous/checkpoint_12.pth"
+        ckpt_path = (
+            "scripts/checkpoints/ve/cifar10_ncsnpp_deep_continuous/checkpoint_12.pth"
+        )
         dataset = CIFAR10(train=False)
     elif FLAGS.dataset == "celeba":
         config = get_celeba_config()
-        ckpt_path = "scripts/checkpoints/ve/celebahq_256_ncsnpp_continuous/checkpoint_48.pth"
+        ckpt_path = (
+            "scripts/checkpoints/ve/celebahq_256_ncsnpp_continuous/checkpoint_48.pth"
+        )
         dataset = CelebA(train=False)
     else:
         raise ValueError(f"Unknown dataset {FLAGS.dataset}")
@@ -66,7 +84,9 @@ def main(_):
     config.eval.batch_size = FLAGS.batch_size
 
     score_model = load_checkpoint(config, ckpt_path)
-    inverse_task = get_inverse_task(config, dataset, FLAGS.task, FLAGS.noise_type, FLAGS.noise_severity)
+    inverse_task = get_inverse_task(
+        config, dataset, FLAGS.task, FLAGS.noise_type, FLAGS.noise_severity
+    )
     data_loader = get_dataloader(dataset, FLAGS.samples_per_image, FLAGS.batch_size)
     sampling_fn = get_sampling_fn(config, dataset, inverse_task, lambda_=FLAGS.lambda_)
 
@@ -114,7 +134,9 @@ def get_dataloader(dataset, samples_per_image: int, batch_size: int):
                 dataset_idx, sample_idx, batch = [], [], []
 
 
-def get_inverse_task(config, dataset, task_name: str, noise_type: str, noise_severity: int):
+def get_inverse_task(
+    config, dataset, task_name: str, noise_type: str, noise_severity: int
+):
     if task_name == "deblur_gaussian":
         return DeblurTask(dataset.img_size, kernel_type="gaussian", kernel_size=5).to(
             device=config.device
@@ -125,17 +147,21 @@ def get_inverse_task(config, dataset, task_name: str, noise_type: str, noise_sev
         )
     elif task_name == "sr_16x_noisy":
         sr = SuperResolutionTask(dataset.img_size, scale_factor=16)
-        denoise = DenoiseTask(sr.output_shape, noise_type=noise_type, severity=noise_severity)
+        denoise = DenoiseTask(
+            sr.output_shape, noise_type=noise_type, severity=noise_severity
+        )
         return CombinedTask([sr, denoise]).to(device=config.device)
     elif task_name == "deblur_colorise":
         colorise = ColorizationTask(dataset.img_size)
-        deblur = DeblurTask(colorise.output_shape, kernel_type="gaussian", kernel_size=5).to(
-            device=config.device
-        )
+        deblur = DeblurTask(
+            colorise.output_shape, kernel_type="gaussian", kernel_size=5
+        ).to(device=config.device)
         return CombinedTask([colorise, deblur]).to(device=config.device)
     elif task_name == "denoise_colorise":
         colorise = ColorizationTask(dataset.img_size)
-        denoise = DenoiseTask(colorise.output_shape, noise_type=noise_type, severity=noise_severity)
+        denoise = DenoiseTask(
+            colorise.output_shape, noise_type=noise_type, severity=noise_severity
+        )
         return CombinedTask([colorise, denoise]).to(device=config.device)
     elif task_name == "sr_colorise":
         colorise = ColorizationTask(dataset.img_size)
@@ -146,9 +172,11 @@ def get_inverse_task(config, dataset, task_name: str, noise_type: str, noise_sev
         deblur = DeblurTask(sr.output_shape, kernel_type="gaussian", kernel_size=5).to(
             device=config.device
         )
-        return CombinedTask([sr,deblur]).to(device=config.device)
-    elif task_name == 'denoise':
-        return DenoiseTask(dataset.img_size, noise_type=noise_type, severity=noise_severity).to(device=config.device)
+        return CombinedTask([sr, deblur]).to(device=config.device)
+    elif task_name == "denoise":
+        return DenoiseTask(
+            dataset.img_size, noise_type=noise_type, severity=noise_severity
+        ).to(device=config.device)
     else:
         raise ValueError(f"Unknown inverse task {task_name}")
 
