@@ -60,7 +60,7 @@ def objective_function(utils, lambda_value):
         print(f"Sampling image {i}...")
 
         x = x[None, :].to(utils.config.device)
-        y = utils.inverse_task.A(x)
+        y = utils.inverse_task.forward(x)
         x_hat, _ = sampling_fn(utils.score_model, y)
 
         print(f"Computing metrics for image {i}...")
