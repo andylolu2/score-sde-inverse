@@ -49,7 +49,7 @@ def main(_):
         random_state=1,
         allow_duplicate_points=True,
     )
-    optimizer.set_gp_params(kernel=RBF(length_scale=1), alpha=0.1, normalize_y=True)
+    optimizer.set_gp_params(kernel=RBF(length_scale=2), normalize_y=True)
     optimizer.maximize(
         init_points=FLAGS.init_points,
         n_iter=FLAGS.iterations,
