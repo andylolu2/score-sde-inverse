@@ -37,6 +37,7 @@ flags.DEFINE_enum(
 )
 flags.DEFINE_string("save_dir", './logs/gridsearch', "Directory to save samples")
 flags.DEFINE_integer("cv", 5, "Number of cross-validation folds")
+flags.DEFINE_integer("n_jobs", 1, "Number of parallel gridsearch jobs to run simultaneously.")
 
 
 class InverseSolverSampler:
@@ -122,7 +123,7 @@ def main(_):
     psnr = PeakSignalNoiseRatio(data_range=(0,1))
     psnr.__name__ = 'PeakSignalNoiseRatio'
 
-    lambda_range = np.arange(0.01, 0.055, 0.005)
+    lambda_range = np.arange(0.01, 0.1, 0.01)
 
     dataset = torch.stack([utils.dataset[ind] for ind in range(FLAGS.batch_size*FLAGS.num_batches*FLAGS.cv)])
 
@@ -135,13 +136,13 @@ def main(_):
             inverse_task = DenoiseTask(utils.dataset.img_size, noise_type=noise_type, severity=severity).to(device=utils.config.device)
             sampler = InverseSolverSampler(utils.score_model, inverse_task, utils.config, lambda_=0.05, num_batches=FLAGS.num_batches, batch_size=FLAGS.batch_size)
 
-            gscv = GridSearchCV(sampler, dict(lambda_=lambda_range), scoring={'ssim': make_scorer(ssim), 'psnr': make_scorer(psnr)}, error_score='raise', verbose=4, cv=FLAGS.cv, refit=False, n_jobs=3)
+            gscv = GridSearchCV(sampler, dict(lambda_=lambda_range), scoring={'ssim': make_scorer(ssim), 'psnr': make_scorer(psnr)}, error_score='raise', verbose=4, cv=FLAGS.cv, refit=False, n_jobs=FLAGS.n_jobs)
             results[noise_type][severity] = gscv.fit(X=dataset, y=dataset).cv_results_
 
             torch.cuda.empty_cache()
 
 
-    json.dump(results, open(f'{FLAGS.save_dir}/gridsearch_results.csv'))
+    json.dump(results, open(f'{FLAGS.save_dir}/gridsearch_results.csv', 'w+'))
 
     for noise_type, severity_results in results.items():
         print(noise_type, 'noise')
