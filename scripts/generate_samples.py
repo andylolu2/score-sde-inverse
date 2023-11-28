@@ -68,13 +68,13 @@ def main(_):
     if FLAGS.dataset == "cifar10":
         config = get_cifar10_config()
         ckpt_path = (
-            "scripts/checkpoints/ve/cifar10_ncsnpp_deep_continuous/checkpoint_12.pth"
+            "checkpoints/ve/cifar10_ncsnpp_deep_continuous/checkpoint_12.pth"
         )
         dataset = CIFAR10(train=FLAGS.train)
     elif FLAGS.dataset == "celeba":
         config = get_celeba_config()
         ckpt_path = (
-            "scripts/checkpoints/ve/celebahq_256_ncsnpp_continuous/checkpoint_48.pth"
+            "checkpoints/ve/celebahq_256_ncsnpp_continuous/checkpoint_48.pth"
         )
         dataset = CelebA(train=FLAGS.train)
     else:
@@ -98,17 +98,18 @@ def main(_):
         if i == FLAGS.num_batches:
             break
 
+        logging.info('Sampling batch %d...', i)
+
         x = x.to(device=config.device)
         y = inverse_task.forward(x)
         x_hat, _ = sampling_fn(score_model, y)
 
-        for i in range(FLAGS.batch_size):
-            logging.info("Sampling image %d...", i)
-            source = tensor_to_image(y[i])
-            target = tensor_to_image(x[i])
-            reconstructed = tensor_to_image(x_hat[i])
+        for j in range(FLAGS.batch_size):
+            source = tensor_to_image(y[j])
+            target = tensor_to_image(x[j])
+            reconstructed = tensor_to_image(x_hat[j])
 
-            save_dir_sample = save_dir / str(ds_indices[i]) / str(s_indices[i])
+            save_dir_sample = save_dir / str(ds_indices[j]) / str(s_indices[j])
             save_dir_sample.mkdir(parents=True, exist_ok=True)
             source.save(save_dir_sample / f"source.png", "PNG")
             target.save(save_dir_sample / f"target.png", "PNG")
