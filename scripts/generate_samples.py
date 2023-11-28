@@ -41,12 +41,15 @@ flags.DEFINE_enum(
     [
         "deblur_gaussian",
         "sr_4x",
+        "sr_16x",
+        "sr_4x_noisy",
         "sr_16x_noisy",
         "denoise",
         "deblur_colorise",
         "denoise_colorise",
-        "sr_colorise",
-        "sr_deblur",
+        "sr_4x_colorise",
+        "sr_4x_deblur",
+        "denoise_deblur",
     ],
     "Inverse task to use",
 )
@@ -147,12 +150,22 @@ def get_inverse_task(
         return SuperResolutionTask(dataset.img_size, scale_factor=4).to(
             device=config.device
         )
-    elif task_name == "sr_16x_noisy":
-        sr = SuperResolutionTask(dataset.img_size, scale_factor=16)
+    elif task_name == "sr_4x_noisy":
         denoise = DenoiseTask(
-            sr.output_shape, noise_type=noise_type, severity=noise_severity
+            dataset.img_size, noise_type=noise_type, severity=noise_severity
         )
-        return CombinedTask([sr, denoise]).to(device=config.device)
+        sr = SuperResolutionTask(denoise.output_shape, scale_factor=4)
+        return CombinedTask([denoise, sr]).to(device=config.device)
+    elif task_name == "sr_16x":
+        return SuperResolutionTask(dataset.img_size, scale_factor=16).to(
+            device=config.device
+        )
+    elif task_name == "sr_16x_noisy":
+        denoise = DenoiseTask(
+            dataset.img_size, noise_type=noise_type, severity=noise_severity
+        )
+        sr = SuperResolutionTask(denoise.output_shape, scale_factor=16)
+        return CombinedTask([denoise, sr]).to(device=config.device)
     elif task_name == "deblur_colorise":
         colorise = ColorizationTask(dataset.img_size)
         deblur = DeblurTask(
@@ -165,20 +178,29 @@ def get_inverse_task(
             colorise.output_shape, noise_type=noise_type, severity=noise_severity
         )
         return CombinedTask([colorise, denoise]).to(device=config.device)
-    elif task_name == "sr_colorise":
+    elif task_name == "sr_4x_colorise":
         colorise = ColorizationTask(dataset.img_size)
-        sr = SuperResolutionTask(colorise.output_shape, scale_factor=16)
+        sr = SuperResolutionTask(colorise.output_shape, scale_factor=4)
         return CombinedTask([colorise, sr]).to(device=config.device)
-    elif task_name == "sr_deblur":
-        sr = SuperResolutionTask(dataset.img_size, scale_factor=16)
-        deblur = DeblurTask(sr.output_shape, kernel_type="gaussian", kernel_size=5).to(
+    elif task_name == "sr_4x_deblur":
+        deblur = DeblurTask(dataset.img_size, kernel_type="gaussian", kernel_size=5).to(
             device=config.device
         )
-        return CombinedTask([sr, deblur]).to(device=config.device)
+        sr = SuperResolutionTask(deblur.output_shape, scale_factor=4)
+        return CombinedTask([deblur, sr]).to(device=config.device)
     elif task_name == "denoise":
         return DenoiseTask(
             dataset.img_size, noise_type=noise_type, severity=noise_severity
         ).to(device=config.device)
+    elif task_name == "denoise_deblur":
+        deblur = DeblurTask(dataset.img_size, kernel_type="gaussian", kernel_size=5).to(
+            device=config.device
+        )
+        denoise = DenoiseTask(
+            deblur.output_shape, noise_type=noise_type, severity=noise_severity
+        ).to(device=config.device)
+        return CombinedTask([deblur, denoise]).to(device=config.device)
+
     else:
         raise ValueError(f"Unknown inverse task {task_name}")
 
