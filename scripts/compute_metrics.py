@@ -37,7 +37,7 @@ def main(_):
 
             for name, metric in metrics.items():
                 value = metric(reconstructed, target)
-                metric_values[name].append(value.detach().cpu().numpy())
+                metric_values[name].append(value.detach().cpu().numpy().item())
 
     for name, values in metric_values.items():
         # Compute confidence interval for the metric
