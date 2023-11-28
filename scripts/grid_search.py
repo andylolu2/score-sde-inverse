@@ -11,7 +11,7 @@ from torchmetrics.image import StructuralSimilarityIndexMeasure
 from torchmetrics.image import PeakSignalNoiseRatio
 from sklearn.metrics import make_scorer
 from pathlib import Path
-import json
+import dill
 
 from score_inverse.sde import get_sde
 from score_inverse.datasets.scalers import get_data_inverse_scaler
@@ -123,7 +123,7 @@ def main(_):
     psnr = PeakSignalNoiseRatio(data_range=(0,1))
     psnr.__name__ = 'PeakSignalNoiseRatio'
 
-    lambda_range = np.arange(0.01, 0.1, 0.01)
+    lambda_range = np.arange(0.01, 0.11, 0.01)
 
     dataset = torch.stack([utils.dataset[ind] for ind in range(FLAGS.batch_size*FLAGS.num_batches*FLAGS.cv)])
 
@@ -142,7 +142,7 @@ def main(_):
             torch.cuda.empty_cache()
 
 
-    json.dump(results, open(f'{FLAGS.save_dir}/gridsearch_results.csv', 'w+'))
+    dill.dump(results, open(f'{FLAGS.save_dir}/gridsearch_results.pkl', 'wb'))
 
     for noise_type, severity_results in results.items():
         print(noise_type, 'noise')
