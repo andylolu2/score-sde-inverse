@@ -40,7 +40,9 @@ flags.DEFINE_enum(
     [
         "deblur_gaussian",
         "sr_4x",
+        "sr_16x",
         "sr_4x_noisy",
+        "sr_16x_noisy",
         "denoise",
         "deblur_colorise",
         "denoise_colorise",
@@ -151,6 +153,16 @@ def get_inverse_task(
             dataset.img_size, noise_type=noise_type, severity=noise_severity
         )
         sr = SuperResolutionTask(denoise.output_shape, scale_factor=4)
+        return CombinedTask([denoise, sr]).to(device=config.device)
+    elif task_name == "sr_16x":
+        return SuperResolutionTask(dataset.img_size, scale_factor=16).to(
+            device=config.device
+        )
+    elif task_name == "sr_16x_noisy":
+        denoise = DenoiseTask(
+            dataset.img_size, noise_type=noise_type, severity=noise_severity
+        )
+        sr = SuperResolutionTask(denoise.output_shape, scale_factor=16)
         return CombinedTask([denoise, sr]).to(device=config.device)
     elif task_name == "deblur_colorise":
         colorise = ColorizationTask(dataset.img_size)
