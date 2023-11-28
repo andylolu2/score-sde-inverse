@@ -17,6 +17,7 @@ from score_inverse.sde import get_sde
 from score_inverse.datasets.scalers import get_data_inverse_scaler
 from score_inverse.sampling import get_corrector, get_predictor
 from score_inverse.sampling.inverse import get_pc_inverse_solver
+from score_inverse.tasks import DenoiseTask
 
 from scripts.shared_utils import SharedUtils
 
@@ -130,7 +131,9 @@ def main(_):
     for noise_type in ['gaussian', 'shot']:
         results[noise_type] = {}
         for severity in range(1,6):
-            sampler = InverseSolverSampler(utils.score_model, utils.inverse_task, utils.config, lambda_=0.05, num_batches=FLAGS.num_batches, batch_size=FLAGS.batch_size)
+            # ! Only applied to denoise task
+            inverse_task = DenoiseTask(utils.dataset.img_size, noise_type=noise_type, severity=severity).to(device=utils.config.device)
+            sampler = InverseSolverSampler(utils.score_model, inverse_task, utils.config, lambda_=0.05, num_batches=FLAGS.num_batches, batch_size=FLAGS.batch_size)
 
             gscv = GridSearchCV(sampler, dict(lambda_=lambda_range), scoring={'ssim': make_scorer(ssim), 'psnr': make_scorer(psnr)}, error_score='raise', verbose=4, cv=FLAGS.cv, refit=False, n_jobs=3)
             results[noise_type][severity] = gscv.fit(X=dataset, y=dataset).cv_results_

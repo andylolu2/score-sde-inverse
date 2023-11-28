@@ -2,7 +2,6 @@ import numpy as np
 import torch
 from absl import logging
 from PIL import Image
-from torch.utils.data import random_split
 from torchmetrics.image import PeakSignalNoiseRatio
 
 from configs.ve.celebahq_256_ncsnpp_continuous import get_config as get_celeba_config
