@@ -28,7 +28,9 @@ from score_inverse.tasks import (
 
 FLAGS = flags.FLAGS
 flags.DEFINE_enum("dataset", "cifar10", ["cifar10", "celeba"], "Dataset to use.")
-flags.DEFINE_bool("train", False, "Generate from the train set instead of the train set.")
+flags.DEFINE_bool(
+    "train", False, "Generate from the train set instead of the train set."
+)
 flags.DEFINE_integer("num_scales", 50, "Number of discretisation steps")
 flags.DEFINE_integer("batch_size", 10, "Batch size")
 flags.DEFINE_integer("num_batches", 1, "Number of samples to generate")
@@ -65,20 +67,19 @@ flags.DEFINE_integer(
     1,
     "Noise severity from 1-5 based on https://arxiv.org/abs/1903.12261",
 )
+flags.DEFINE_integer(
+    "data_index", 0, "Starting index of the dataset to generate samples from"
+)
 
 
 def main(_):
     if FLAGS.dataset == "cifar10":
         config = get_cifar10_config()
-        ckpt_path = (
-            "checkpoints/ve/cifar10_ncsnpp_deep_continuous/checkpoint_12.pth"
-        )
+        ckpt_path = "checkpoints/ve/cifar10_ncsnpp_deep_continuous/checkpoint_12.pth"
         dataset = CIFAR10(train=FLAGS.train)
     elif FLAGS.dataset == "celeba":
         config = get_celeba_config()
-        ckpt_path = (
-            "checkpoints/ve/celebahq_256_ncsnpp_continuous/checkpoint_48.pth"
-        )
+        ckpt_path = "checkpoints/ve/celebahq_256_ncsnpp_continuous/checkpoint_48.pth"
         dataset = CelebA(train=FLAGS.train)
     else:
         raise ValueError(f"Unknown dataset {FLAGS.dataset}")
@@ -91,7 +92,9 @@ def main(_):
     inverse_task = get_inverse_task(
         config, dataset, FLAGS.task, FLAGS.noise_type, FLAGS.noise_severity
     )
-    data_loader = get_dataloader(dataset, FLAGS.samples_per_image, FLAGS.batch_size)
+    data_loader = get_dataloader(
+        dataset, FLAGS.samples_per_image, FLAGS.batch_size, FLAGS.data_index
+    )
     sampling_fn = get_sampling_fn(config, dataset, inverse_task, lambda_=FLAGS.lambda_)
 
     save_dir = Path(FLAGS.save_dir)
@@ -101,7 +104,7 @@ def main(_):
         if i == FLAGS.num_batches:
             break
 
-        logging.info('Sampling batch %d...', i)
+        logging.info("Sampling batch %d...", i)
 
         x = x.to(device=config.device)
         y = inverse_task.forward(x)
@@ -126,9 +129,11 @@ def tensor_to_image(x: torch.Tensor) -> Image.Image:
     return Image.fromarray(x)
 
 
-def get_dataloader(dataset, samples_per_image: int, batch_size: int):
+def get_dataloader(dataset, samples_per_image: int, batch_size: int, start_idx=0):
     dataset_idx, sample_idx, batch = [], [], []
     for i in range(len(dataset)):
+        if i < start_idx:
+            continue
         for j in range(samples_per_image):
             dataset_idx.append(i)
             sample_idx.append(j)
