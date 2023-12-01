@@ -156,21 +156,21 @@ def get_inverse_task(
             device=config.device
         )
     elif task_name == "sr_4x_noisy":
+        sr = SuperResolutionTask(dataset.img_size, scale_factor=4)
         denoise = DenoiseTask(
-            dataset.img_size, noise_type=noise_type, severity=noise_severity
+            sr.output_shape, noise_type=noise_type, severity=noise_severity
         )
-        sr = SuperResolutionTask(denoise.output_shape, scale_factor=4)
-        return CombinedTask([denoise, sr]).to(device=config.device)
+        return CombinedTask([sr, denoise]).to(device=config.device)
     elif task_name == "sr_16x":
         return SuperResolutionTask(dataset.img_size, scale_factor=16).to(
             device=config.device
         )
     elif task_name == "sr_16x_noisy":
+        sr = SuperResolutionTask(dataset.img_size, scale_factor=16)
         denoise = DenoiseTask(
             dataset.img_size, noise_type=noise_type, severity=noise_severity
         )
-        sr = SuperResolutionTask(denoise.output_shape, scale_factor=16)
-        return CombinedTask([denoise, sr]).to(device=config.device)
+        return CombinedTask([sr, denoise]).to(device=config.device)
     elif task_name == "deblur_colorise":
         colorise = ColorizationTask(dataset.img_size)
         deblur = DeblurTask(

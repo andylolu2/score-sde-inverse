@@ -17,7 +17,9 @@ class DenoiseTask(DecomposeddSVDInverseTask):
         if noise_type in ["gaussian", "normal"]:
             self.noiser = partial(gaussian_noise, severity=severity)
         elif noise_type in ["poisson", "shot"]:
-            self.noiser = partial(shot_noise, severity=severity)
+            self.noiser = lambda x: shot_noise(
+                torch.clamp_min(x, 0.0), severity=severity
+            )
         elif noise_type in ["salt_and_pepper", "impulse"]:
             self.noiser = partial(impulse_noise, severity=severity)
         else:
